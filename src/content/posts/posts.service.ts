@@ -1,0 +1,266 @@
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { Connection, FilterQuery } from "mongoose";
+import slugify from "slugify";
+import { PostsRepository } from "./posts.repository";
+import { CreatePostDto, UpdatePostDto } from "./dto/post.dto";
+import { PostDocument } from "./schemas/post.schema";
+import { FeedService } from "../../feed/feed.service";
+import { Tenant } from "../../tenants/schemas/tenant.schema";
+
+@Injectable()
+export class PostsService {
+  constructor(
+    private readonly postsRepository: PostsRepository,
+    private readonly feedService: FeedService,
+  ) {}
+
+  /**
+   * Creates a new post for the tenant.
+   * Auto-generates slug from title if not provided.
+   */
+  async create(
+    connection: Connection,
+    tenant: Tenant,
+    createPostDto: CreatePostDto,
+    authorId: string,
+    authorName: string,
+    authorUsername: string,
+  ): Promise<PostDocument> {
+    const slug = await this.generateUniqueSlug(
+      connection,
+      createPostDto.slug || createPostDto.title,
+    );
+
+    const post = await this.postsRepository.create(connection, {
+      ...createPostDto,
+      slug,
+      authorId,
+      authorName,
+      authorUsername,
+      tenantId: tenant["_id"]
+        ? (tenant["_id"] as unknown as string).toString()
+        : (tenant as unknown as { id: string }).id,
+      publishedAt:
+        createPostDto.status === "published" ? new Date() : undefined,
+      scheduledAt:
+        createPostDto.status === "scheduled" && createPostDto.scheduledAt
+          ? new Date(createPostDto.scheduledAt)
+          : undefined,
+    });
+
+    if (post.status === "published") {
+      await this.feedService.syncPostToFeed(
+        tenant["_id"]
+          ? (tenant["_id"] as unknown as string).toString()
+          : (tenant as unknown as { id: string }).id,
+        tenant.slug,
+        tenant.name,
+        authorUsername,
+        post,
+      );
+    }
+
+    return post;
+  }
+
+  async findAll(
+    connection: Connection,
+    page: number = 1,
+    limit: number = 10,
+    status?: string,
+    authorId?: string,
+    tenantId?: string,
+    ids?: string[],
+  ) {
+    const filter: FilterQuery<PostDocument> = { deletedAt: { $exists: false } };
+
+    if (ids && ids.length > 0) {
+      filter._id = { $in: ids };
+    }
+
+    if (status === "deleted") {
+      filter.deletedAt = { $exists: true };
+    } else if (status) {
+      filter.status = status;
+    }
+    if (authorId) filter.authorId = authorId;
+
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.postsRepository.findAll(connection, filter, { skip, limit }),
+      this.postsRepository.count(connection, filter),
+    ]);
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async findOne(connection: Connection, id: string): Promise<PostDocument> {
+    const post = await this.postsRepository.findById(connection, id);
+    if (!post || post.deletedAt) throw new NotFoundException("Post not found");
+    return post;
+  }
+
+  async findBySlug(
+    connection: Connection,
+    slug: string,
+  ): Promise<PostDocument | null> {
+    return this.postsRepository.findBySlug(connection, slug);
+  }
+
+  async search(connection: Connection, query: string): Promise<PostDocument[]> {
+    return this.postsRepository.search(connection, query);
+  }
+
+  async incrementLikes(
+    connection: Connection,
+    id: string,
+    userId: string,
+  ): Promise<void> {
+    await this.postsRepository.incrementLikes(connection, id, userId);
+    this.feedService.updateLikes(id, userId, true).catch(() => {});
+  }
+
+  async decrementLikes(
+    connection: Connection,
+    id: string,
+    userId: string,
+  ): Promise<void> {
+    await this.postsRepository.decrementLikes(connection, id, userId);
+    this.feedService.updateLikes(id, userId, false).catch(() => {});
+  }
+
+  async update(
+    connection: Connection,
+    id: string,
+    updatePostDto: UpdatePostDto,
+    tenant?: Tenant,
+  ): Promise<PostDocument> {
+    const post = await this.findOne(connection, id);
+
+    let slug = updatePostDto.slug;
+    if (slug && slug !== post.slug) {
+      slug = await this.generateUniqueSlug(connection, slug);
+    }
+
+    const updated = await this.postsRepository.update(connection, id, {
+      ...updatePostDto,
+      slug: slug || post.slug,
+      scheduledAt:
+        updatePostDto.status === "scheduled" && updatePostDto.scheduledAt
+          ? new Date(updatePostDto.scheduledAt)
+          : undefined,
+    });
+
+    if (updated && tenant && updated.status === "published") {
+      await this.feedService.syncPostToFeed(
+        tenant["_id"]
+          ? (tenant["_id"] as unknown as string).toString()
+          : (tenant as unknown as { id: string }).id,
+        tenant.slug,
+        tenant.name,
+        updated.authorUsername,
+        updated,
+      );
+    }
+
+    return updated!;
+  }
+
+  async delete(connection: Connection, id: string): Promise<PostDocument> {
+    const updated = await this.postsRepository.update(connection, id, {
+      deletedAt: new Date(),
+    });
+    if (!updated) throw new NotFoundException("Post not found");
+
+    const tId = updated.tenantId ? updated.tenantId.toString() : "";
+    const pId = updated._id ? updated._id.toString() : updated.id;
+
+    if (tId && pId) {
+      await this.feedService.deletePostFromFeed(tId, pId, updated.tags);
+    }
+
+    return updated;
+  }
+
+  async restore(
+    connection: Connection,
+    id: string,
+    tenant?: Tenant,
+  ): Promise<PostDocument> {
+    const updated = await this.postsRepository.restore(connection, id);
+    if (!updated) throw new NotFoundException("Post not found");
+
+    if (updated.status === "published" && (updated.tenantId || tenant)) {
+      const tId = tenant
+        ? (tenant["_id"] as unknown as string)?.toString() ||
+          (tenant as unknown as { id: string }).id
+        : updated.tenantId?.toString();
+      const tSlug = tenant?.slug || "";
+      const tName = tenant?.name || "";
+
+      await this.feedService.syncPostToFeed(
+        tId,
+        tSlug,
+        tName,
+        updated.authorUsername || "",
+        updated,
+      );
+    }
+
+    return updated;
+  }
+
+  private async generateUniqueSlug(
+    connection: Connection,
+    baseText: string,
+  ): Promise<string> {
+    const baseSlug = slugify(baseText, { lower: true, strict: true });
+    let slug = baseSlug;
+    let counter = 1;
+
+    while (await this.postsRepository.findOne(connection, { slug })) {
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+    return slug;
+  }
+  async findScheduledPostsDue(connection: Connection): Promise<PostDocument[]> {
+    return this.postsRepository.findAll(connection, {
+      status: "scheduled",
+      scheduledAt: { $lte: new Date() },
+      deletedAt: { $exists: false },
+    });
+  }
+
+  async publishScheduledPost(
+    connection: Connection,
+    post: PostDocument,
+    tenant: Tenant,
+  ): Promise<void> {
+    const updated = await this.postsRepository.update(connection, post.id, {
+      status: "published",
+      publishedAt: new Date(),
+      scheduledAt: undefined,
+    });
+
+    if (updated) {
+      await this.feedService.syncPostToFeed(
+        tenant["_id"]
+          ? (tenant["_id"] as unknown as string).toString()
+          : (tenant as unknown as { id: string }).id,
+        tenant.slug,
+        tenant.name,
+        updated.authorUsername,
+        updated,
+      );
+    }
+  }
+}
