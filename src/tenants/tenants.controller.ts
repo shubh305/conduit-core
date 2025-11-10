@@ -41,7 +41,12 @@ export class TenantsController {
     @Body() createTenantDto: CreateTenantDto,
   ) {
     const userId = req.user.id;
-    const tenant = await this.tenantsService.create(createTenantDto, userId);
+    const username = req.user.username;
+    const tenant = await this.tenantsService.create(
+      createTenantDto,
+      userId,
+      username,
+    );
     return { tenant };
   }
 

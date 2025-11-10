@@ -25,6 +25,9 @@ export class TenantsService {
     ownerUserId: string,
     ownerUsername?: string,
   ): Promise<TenantDocument> {
+    this.logger.log(
+      `Creating tenant with slug: ${createTenantDto.slug} for owner: ${ownerUsername} (${ownerUserId})`,
+    );
     const existing = await this.tenantsRepository.findBySlug(
       createTenantDto.slug,
     );

@@ -26,7 +26,7 @@ export class Tenant {
       "techie",
       "professional",
       "terminal",
-      "noir",
+      "classic-white",
     ],
     default: "classic",
   })

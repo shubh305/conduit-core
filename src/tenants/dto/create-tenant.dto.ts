@@ -34,7 +34,18 @@ export class CreateTenantDto {
 
   @ApiProperty({ required: false, default: "classic" })
   @IsOptional()
-  @IsEnum(["classic", "cyber", "sakura", "ronin", "octane"])
+  @IsEnum([
+    "classic",
+    "cyber",
+    "sakura",
+    "ronin",
+    "octane",
+    "journal",
+    "techie",
+    "professional",
+    "terminal",
+    "classic-white",
+  ])
   theme?: string;
 
   @ApiPropertyOptional()
