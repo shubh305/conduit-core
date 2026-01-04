@@ -24,8 +24,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   async getMasterConnection(): Promise<Connection> {
     if (!this.masterConnection) {
       const uri = this.configService.get<string>("MONGO_URI");
-      const dbName =
-        this.configService.get<string>("MONGO_DB_NAME") || "conduit_master";
+      const dbName = this.configService.get<string>("MONGO_DB_NAME") || "conduit_master";
       this.masterConnection = await mongoose
         .createConnection(uri, {
           dbName,
@@ -41,7 +40,9 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     }
 
     const uri = this.configService.get<string>("MONGO_URI");
-    if (!databaseName.startsWith("conduit_tenant_")) {
+    const prefix = this.configService.get<string>("TENANT_DB_PREFIX") || "conduit_tenant_";
+
+    if (!databaseName.startsWith(prefix)) {
       throw new Error(`Invalid tenant database name: ${databaseName}`);
     }
 
@@ -55,14 +56,19 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     return connection;
   }
 
+  getTenantDatabaseName(tenantId: string): string {
+    const prefix = this.configService.get<string>("TENANT_DB_PREFIX") || "conduit_tenant_";
+    return `${prefix}${tenantId}`;
+  }
+
   async createTenantDatabase(tenantId: string): Promise<string> {
-    const databaseName = `conduit_tenant_${tenantId}`;
+    const databaseName = this.getTenantDatabaseName(tenantId);
     await this.getTenantConnection(databaseName);
     return databaseName;
   }
 
   async dropTenantDatabase(tenantId: string): Promise<void> {
-    const databaseName = `conduit_tenant_${tenantId}`;
+    const databaseName = this.getTenantDatabaseName(tenantId);
     const connection = await this.getTenantConnection(databaseName);
     await connection.dropDatabase();
     this.connections.delete(databaseName);

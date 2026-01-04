@@ -1,9 +1,4 @@
-import {
-  Module,
-  MiddlewareConsumer,
-  RequestMethod,
-  NestModule,
-} from "@nestjs/common";
+import { Module, MiddlewareConsumer, RequestMethod, NestModule } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { MongooseModule } from "@nestjs/mongoose";
 import * as Joi from "joi";
@@ -23,13 +18,12 @@ import { SchedulerModule } from "./scheduler/scheduler.module";
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({
-        NODE_ENV: Joi.string()
-          .valid("development", "production", "test", "provision")
-          .default("development"),
+        NODE_ENV: Joi.string().valid("development", "production", "test", "provision").default("development"),
         PORT: Joi.number().default(4000),
         API_PREFIX: Joi.string().default("api"),
         MONGO_URI: Joi.string().required(),
         MONGO_DB_NAME: Joi.string().default("conduit_master"),
+        TENANT_DB_PREFIX: Joi.string().default("conduit_tenant_"),
         JWT_SECRET: Joi.string().required(),
         JWT_ACCESS_EXPIRY: Joi.string().default("2h"),
         JWT_REFRESH_EXPIRY: Joi.string().default("7d"),
@@ -63,8 +57,6 @@ import { SchedulerModule } from "./scheduler/scheduler.module";
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(TenantMiddleware)
-      .forRoutes({ path: "*", method: RequestMethod.ALL });
+    consumer.apply(TenantMiddleware).forRoutes({ path: "*", method: RequestMethod.ALL });
   }
 }

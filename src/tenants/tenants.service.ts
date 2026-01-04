@@ -20,33 +20,22 @@ export class TenantsService {
     @InjectConnection() private readonly connection: Connection,
   ) {}
 
-  async create(
-    createTenantDto: CreateTenantDto,
-    ownerUserId: string,
-    ownerUsername?: string,
-  ): Promise<TenantDocument> {
-    this.logger.log(
-      `Creating tenant with slug: ${createTenantDto.slug} for owner: ${ownerUsername} (${ownerUserId})`,
-    );
-    const existing = await this.tenantsRepository.findBySlug(
-      createTenantDto.slug,
-    );
+  async create(createTenantDto: CreateTenantDto, ownerUserId: string, ownerUsername?: string): Promise<TenantDocument> {
+    this.logger.log(`Creating tenant with slug: ${createTenantDto.slug} for owner: ${ownerUsername} (${ownerUserId})`);
+    const existing = await this.tenantsRepository.findBySlug(createTenantDto.slug);
     if (existing) {
       throw new BadRequestException("Tenant slug already taken");
     }
 
     let finalOwnerUsername = ownerUsername;
     if (!finalOwnerUsername) {
-      const user = await this.usersService.findById(
-        this.connection,
-        ownerUserId,
-      );
+      const user = await this.usersService.findById(this.connection, ownerUserId);
       if (!user) throw new BadRequestException("Owner user not found");
       finalOwnerUsername = user.username;
     }
 
     const tenantId = new Types.ObjectId();
-    const databaseName = `conduit_tenant_${tenantId.toString()}`;
+    const databaseName = this.databaseService.getTenantDatabaseName(tenantId.toString());
 
     const tenant = await this.tenantsRepository.create({
       ...createTenantDto,

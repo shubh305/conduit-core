@@ -47,6 +47,7 @@ src/
 
 ## 🚀 Getting Started
 
+### 1. Local Development
 1. **Install Dependencies**
    ```bash
    npm install
@@ -58,17 +59,16 @@ src/
    cp .env.example .env
    ```
 
-3. **Run for Development**
+3. **Run**
    ```bash
    npm run start:dev
    ```
-   The API will be available at `http://localhost:4000`.
 
-4. **Production Build**
-   ```bash
-   npm run build
-   npm run start:prod
-   ```
+### 2. Docker Deployment (Recommended)
+You can run the backend using Docker Compose:
+```bash
+docker-compose up -d
+```
 
 ---
 

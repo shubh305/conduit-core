@@ -148,6 +148,7 @@ prd*
 /.DS_Store
 *-workspace
 launch.json
+.vscode/
 
 # Tests
 *spec.ts

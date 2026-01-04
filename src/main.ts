@@ -49,9 +49,7 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle("Project Conduit API")
-    .setDescription(
-      "Backend API for Project Conduit multi-tenant publishing platform",
-    )
+    .setDescription("Backend API for Project Conduit multi-tenant publishing platform")
     .setVersion("0.0.1")
     .addBearerAuth()
     .addApiKey(
