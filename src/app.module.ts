@@ -12,6 +12,7 @@ import { TenantMiddleware } from "./common/middleware/tenant.middleware";
 import { StorageModule } from "./storage/storage.module";
 import { SearchModule } from "./search/search.module";
 import { SchedulerModule } from "./scheduler/scheduler.module";
+import { DictionaryModule } from "./dictionary/dictionary.module";
 
 @Module({
   imports: [
@@ -29,6 +30,10 @@ import { SchedulerModule } from "./scheduler/scheduler.module";
         JWT_REFRESH_EXPIRY: Joi.string().default("7d"),
         UNSPLASH_ACCESS_KEY: Joi.string().optional(),
         UNSPLASH_API_URL: Joi.string().default("https://api.unsplash.com"),
+        STORAGE_SERVICE_URL: Joi.string().default("127.0.0.1:50051"),
+        STORAGE_PUBLIC_URL: Joi.string().default("https://storage.octanebrew.dev"),
+        DICTIONARY_SERVICE_URL: Joi.string().required(),
+        SHARED_API_KEY: Joi.string().required(),
       }),
     }),
     MongooseModule.forRootAsync({
@@ -51,6 +56,7 @@ import { SchedulerModule } from "./scheduler/scheduler.module";
     StorageModule,
     SearchModule,
     SchedulerModule,
+    DictionaryModule,
   ],
   controllers: [],
   providers: [],

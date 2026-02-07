@@ -8,10 +8,7 @@ import { UsersModule } from "../users/users.module";
 
 @Global()
 @Module({
-  imports: [
-    MongooseModule.forFeature([{ name: Tenant.name, schema: TenantSchema }]),
-    UsersModule,
-  ],
+  imports: [MongooseModule.forFeature([{ name: Tenant.name, schema: TenantSchema }]), UsersModule],
   controllers: [TenantsController],
   providers: [TenantsService, TenantsRepository],
   exports: [TenantsService, TenantsRepository],

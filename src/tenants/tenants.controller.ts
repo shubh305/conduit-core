@@ -1,21 +1,5 @@
-import {
-  Controller,
-  Post,
-  Body,
-  Get,
-  Param,
-  Query,
-  BadRequestException,
-  UseGuards,
-  Req,
-  Delete,
-} from "@nestjs/common";
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from "@nestjs/swagger";
+import { Controller, Post, Body, Get, Param, Query, BadRequestException, UseGuards, Req, Delete } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
 import { InjectConnection } from "@nestjs/mongoose";
 import { Connection } from "mongoose";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
@@ -36,17 +20,10 @@ export class TenantsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "Create a new tenant (blog)" })
   @ApiResponse({ status: 201, description: "Tenant created successfully" })
-  async create(
-    @Req() req: AuthenticatedRequest,
-    @Body() createTenantDto: CreateTenantDto,
-  ) {
+  async create(@Req() req: AuthenticatedRequest, @Body() createTenantDto: CreateTenantDto) {
     const userId = req.user.id;
     const username = req.user.username;
-    const tenant = await this.tenantsService.create(
-      createTenantDto,
-      userId,
-      username,
-    );
+    const tenant = await this.tenantsService.create(createTenantDto, userId, username);
     return { tenant };
   }
 

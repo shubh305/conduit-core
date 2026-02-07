@@ -1,5 +1,6 @@
 import { Module, Global } from "@nestjs/common";
 import { ClientsModule, Transport } from "@nestjs/microservices";
+import { ConfigModule, ConfigService } from "@nestjs/config";
 import { StorageService } from "./storage.service";
 import { UnsplashService } from "./unsplash.service";
 import { MediaController } from "./media.controller";
@@ -8,15 +9,19 @@ import { join } from "path";
 @Global()
 @Module({
   imports: [
-    ClientsModule.register([
+    ClientsModule.registerAsync([
       {
         name: "STORAGE_PACKAGE",
-        transport: Transport.GRPC,
-        options: {
-          package: "storage",
-          protoPath: join(__dirname, "storage.proto"),
-          url: process.env.STORAGE_SERVICE_URL || "localhost:50051",
-        },
+        imports: [ConfigModule],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.GRPC,
+          options: {
+            package: "storage",
+            protoPath: join(__dirname, "storage.proto"),
+            url: configService.get<string>("STORAGE_SERVICE_URL"),
+          },
+        }),
+        inject: [ConfigService],
       },
     ]),
   ],
