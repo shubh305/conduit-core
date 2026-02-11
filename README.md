@@ -2,7 +2,7 @@
 
 Conduit Core is the backend API for **Project Conduit**, a scalable multi-tenant publishing platform. It provides a robust, isolated data architecture for creators to manage their own blogs while participating in a global discovery network.
 
-## 🏗 Architecture
+## Architecture
 
 ### Multi-Tenancy Strategy
 Conduit Core implements a **Database-per-Tenant** strategy using MongoDB. This ensures strict data isolation and performance predictability.
@@ -18,7 +18,7 @@ Conduit Core implements a **Database-per-Tenant** strategy using MongoDB. This e
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 src/
@@ -37,7 +37,7 @@ src/
 
 ---
 
-## 🛠 Prerequisites
+## Prerequisites
 
 - **Node.js**: v18 or later
 - **MongoDB**: A running instance (or Docker)
@@ -45,7 +45,7 @@ src/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Local Development
 1. **Install Dependencies**
@@ -72,7 +72,7 @@ docker-compose up -d
 
 ---
 
-## 📖 Features & Endpoints
+## Features & Endpoints
 
 ### 1. Multi-Tenancy
 Most requests require an `x-tenant-id` header to route queries to the correct database.
@@ -102,7 +102,7 @@ Most requests require an `x-tenant-id` header to route queries to the correct da
 
 ---
 
-## 🧪 Testing
+## Testing
 
 ```bash
 # Unit Tests
@@ -115,8 +115,8 @@ npm run test:e2e
 npm run lint
 ```
 
-## 📍 API Documentation
+## API Documentation
 
 Once the app is running, visit:
-- **Swagger UI**: `http://localhost:4000/docs`
-- ** gRPC Support**: Service definitions available for internal microservices integration.
+- **Swagger UI**: `http://localhost:4001/docs`
+- **gRPC Support**: Service definitions available for internal microservices integration.

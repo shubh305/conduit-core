@@ -19,7 +19,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   private readonly logger = new Logger(JwtStrategy.name);
 
   constructor(
-    configService: ConfigService,
+    public readonly configService: ConfigService,
     private readonly usersService: UsersService,
     private readonly databaseService: DatabaseService,
   ) {
@@ -34,7 +34,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(req: AuthenticatedRequest, payload: TokenPayload): Promise<JwtPayload> {
     // Use the user's tenant from the JWT payload, not the request's tenant
     // This allows users to view posts from other tenants while staying authenticated
-    const userTenantDbName = `conduit_tenant_${payload.tenantId}`;
+    const prefix = this.configService.get<string>("TENANT_DB_PREFIX") || "conduit_tenant_";
+    const userTenantDbName = `${prefix}${payload.tenantId}`;
     const userTenantConnection = await this.databaseService.getTenantConnection(userTenantDbName);
 
     const user = await this.usersService.findById(userTenantConnection, payload.sub);
