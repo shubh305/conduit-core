@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NestMiddleware,
-  BadRequestException,
-} from "@nestjs/common";
+import { Injectable, NestMiddleware, BadRequestException } from "@nestjs/common";
 import { Request, Response, NextFunction } from "express";
 import { TenantsService } from "../../tenants/tenants.service";
 import { DatabaseService } from "../../database/database.service";
@@ -30,9 +26,7 @@ export class TenantMiddleware implements NestMiddleware {
       throw new BadRequestException("Tenant is not active");
     }
 
-    const tenantConnection = await this.databaseService.getTenantConnection(
-      tenant.databaseName,
-    );
+    const tenantConnection = await this.databaseService.getTenantConnection(tenant.databaseName);
 
     req["tenant"] = tenant;
     req["tenantConnection"] = tenantConnection;

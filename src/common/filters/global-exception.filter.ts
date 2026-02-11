@@ -1,10 +1,4 @@
-import {
-  ExceptionFilter,
-  Catch,
-  ArgumentsHost,
-  HttpException,
-  Logger,
-} from "@nestjs/common";
+import { ExceptionFilter, Catch, ArgumentsHost, HttpException, Logger } from "@nestjs/common";
 import { Request, Response } from "express";
 
 interface HttpExceptionResponse {
@@ -22,19 +16,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
     const status = exception.getStatus();
-    const exceptionResponse = exception.getResponse() as
-      | string
-      | HttpExceptionResponse;
+    const exceptionResponse = exception.getResponse() as string | HttpExceptionResponse;
 
-    this.logger.error(
-      `HTTP ${status} Error: ${JSON.stringify(exceptionResponse)}`,
-      exception.stack,
-    );
+    this.logger.error(`HTTP ${status} Error: ${JSON.stringify(exceptionResponse)}`, exception.stack);
 
     const message =
       typeof exceptionResponse === "object"
-        ? (exceptionResponse as HttpExceptionResponse).message ||
-          exception.message
+        ? (exceptionResponse as HttpExceptionResponse).message || exception.message
         : exceptionResponse || exception.message;
 
     const error =

@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  ConflictException,
-} from "@nestjs/common";
+import { Injectable, UnauthorizedException, ConflictException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { Connection } from "mongoose";
 import * as bcrypt from "bcrypt";
@@ -18,16 +14,10 @@ export class AuthService {
   ) {}
 
   async signup(connection: Connection, tenantId: string, dto: SignupDto) {
-    const existingEmail = await this.usersService.findByEmail(
-      connection,
-      dto.email,
-    );
+    const existingEmail = await this.usersService.findByEmail(connection, dto.email);
     if (existingEmail) throw new ConflictException("Email already exists");
 
-    const existingUser = await this.usersService.findByUsername(
-      connection,
-      dto.username,
-    );
+    const existingUser = await this.usersService.findByUsername(connection, dto.username);
     if (existingUser) throw new ConflictException("Username already exists");
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -41,25 +31,16 @@ export class AuthService {
   }
 
   async login(connection: Connection, tenantId: string, dto: LoginDto) {
-    let user = await this.usersService.findByEmail(
-      connection,
-      dto.usernameOrEmail,
-    );
+    let user = await this.usersService.findByEmail(connection, dto.usernameOrEmail);
     if (!user) {
-      user = await this.usersService.findByUsername(
-        connection,
-        dto.usernameOrEmail,
-      );
+      user = await this.usersService.findByUsername(connection, dto.usernameOrEmail);
     }
 
     if (!user) {
       throw new UnauthorizedException("Invalid credentials");
     }
 
-    const isPasswordValid = await bcrypt.compare(
-      dto.password,
-      user.passwordHash,
-    );
+    const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!isPasswordValid) {
       throw new UnauthorizedException("Invalid credentials");
     }
