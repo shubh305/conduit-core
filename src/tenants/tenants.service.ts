@@ -97,4 +97,14 @@ export class TenantsService {
 
     await this.tenantsRepository.delete(id);
   }
+
+  async update(id: string, userId: string, updateData: Partial<TenantDocument>): Promise<TenantDocument> {
+    const tenant = await this.tenantsRepository.findById(id);
+    if (!tenant) throw new BadRequestException("Tenant not found");
+    if (tenant.ownerUserId !== userId) throw new BadRequestException("Not authorized to update this tenant");
+
+    const updated = await this.tenantsRepository.update(id, updateData);
+    if (!updated) throw new BadRequestException("Failed to update tenant");
+    return updated;
+  }
 }

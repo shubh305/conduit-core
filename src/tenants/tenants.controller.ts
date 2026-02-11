@@ -5,6 +5,7 @@ import { Connection } from "mongoose";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
 import { TenantsService } from "./tenants.service";
 import { CreateTenantDto } from "./dto/create-tenant.dto";
+import { UpdateTenantDto } from "./dto/update-tenant.dto";
 import { AuthenticatedRequest } from "../common/interfaces/authenticated-request.interface";
 
 @ApiTags("tenants")
@@ -69,5 +70,14 @@ export class TenantsController {
   async delete(@Req() req: AuthenticatedRequest, @Param("id") id: string) {
     await this.tenantsService.delete(id, req.user.id);
     return { success: true };
+  }
+
+  @Post(":id")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Update a tenant (blog)" })
+  async update(@Req() req: AuthenticatedRequest, @Param("id") id: string, @Body() updateData: UpdateTenantDto) {
+    const tenant = await this.tenantsService.update(id, req.user.id, updateData);
+    return { tenant };
   }
 }
