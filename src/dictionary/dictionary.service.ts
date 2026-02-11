@@ -51,6 +51,20 @@ export class DictionaryService {
 
       const entries = Array.isArray(data) ? data : [data];
 
+      // Smart Suggestion Validation:
+      if (entries.length > 0 && entries[0].metadata?.is_correct === false) {
+        const metadata = entries[0].metadata as { suggestions?: string[] };
+        if (metadata.suggestions && metadata.suggestions.length > 0) {
+          this.logger.debug(`Validating ${metadata.suggestions.length} suggestions for '${word}'`);
+          const validationResults = await Promise.all(metadata.suggestions.map(s => this.checkWordExists(s)));
+          const validSuggestions = metadata.suggestions.filter((_, index) => validationResults[index]);
+          this.logger.debug(
+            `Filtered suggestions for '${word}': ${metadata.suggestions.length} -> ${validSuggestions.length}`,
+          );
+          metadata.suggestions = validSuggestions;
+        }
+      }
+
       let refinedEntries = entries;
       if (reading) {
         const lowerReading = reading.toLowerCase().trim();
@@ -81,6 +95,34 @@ export class DictionaryService {
       }
       this.logger.error(`Unexpected error looking up word '${word}': ${error.message}`);
       throw new ServiceUnavailableException("Dictionary service processing error");
+    }
+  }
+
+  /**
+   * Quick check to see if a word actually exists in the lexicon with definitions.
+   * Used to filter out ghost suggestions.
+   */
+  private async checkWordExists(word: string): Promise<boolean> {
+    const url = `${this.serviceUrl}/v1/lookup`;
+    try {
+      const { data } = await firstValueFrom(
+        this.httpService.post<DictionaryEntry | DictionaryEntry[]>(
+          url,
+          { word },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "X-API-KEY": this.apiKey,
+            },
+            timeout: 2000,
+          },
+        ),
+      );
+
+      const entries = Array.isArray(data) ? data : [data];
+      return entries.some(e => e.metadata?.is_correct !== false && e.meanings && e.meanings.length > 0);
+    } catch {
+      return false;
     }
   }
 }
