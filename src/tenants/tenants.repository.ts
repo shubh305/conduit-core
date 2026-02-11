@@ -5,9 +5,7 @@ import { Tenant, TenantDocument } from "./schemas/tenant.schema";
 
 @Injectable()
 export class TenantsRepository {
-  constructor(
-    @InjectModel(Tenant.name) private tenantModel: Model<TenantDocument>,
-  ) {}
+  constructor(@InjectModel(Tenant.name) private tenantModel: Model<TenantDocument>) {}
 
   async create(tenant: Partial<Tenant>): Promise<TenantDocument> {
     const newTenant = new this.tenantModel(tenant);
@@ -26,9 +24,7 @@ export class TenantsRepository {
     return this.tenantModel.find({ ownerUserId }).exec();
   }
 
-  async findByOwnerUsername(
-    ownerUsername: string,
-  ): Promise<TenantDocument | null> {
+  async findByOwnerUsername(ownerUsername: string): Promise<TenantDocument | null> {
     return this.tenantModel.findOne({ ownerUsername }).exec();
   }
 
@@ -36,13 +32,8 @@ export class TenantsRepository {
     return this.tenantModel.find().exec();
   }
 
-  async update(
-    id: string,
-    updateData: Partial<Tenant>,
-  ): Promise<TenantDocument | null> {
-    return this.tenantModel
-      .findByIdAndUpdate(id, { $set: updateData }, { new: true })
-      .exec();
+  async update(id: string, updateData: Partial<Tenant>): Promise<TenantDocument | null> {
+    return this.tenantModel.findByIdAndUpdate(id, { $set: updateData }, { new: true }).exec();
   }
 
   async delete(id: string): Promise<void> {

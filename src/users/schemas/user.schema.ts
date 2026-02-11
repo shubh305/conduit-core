@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Document } from "mongoose";
+import { Document, Types } from "mongoose";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export type UserDocument = User & Document;
@@ -50,6 +50,12 @@ export class User {
     stackoverflow?: string;
     instagram?: string;
   };
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: "User" }], default: [] })
+  followers: Types.ObjectId[];
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: "User" }], default: [] })
+  following: Types.ObjectId[];
 
   @Prop({
     type: String,

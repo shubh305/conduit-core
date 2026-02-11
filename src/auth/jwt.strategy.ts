@@ -4,10 +4,8 @@ import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Logger } from "@nestjs/common";
 import { UsersService } from "../users/users.service";
-import {
-  JwtPayload,
-  AuthenticatedRequest,
-} from "../common/interfaces/authenticated-request.interface";
+import { DatabaseService } from "../database/database.service";
+import { JwtPayload, AuthenticatedRequest } from "../common/interfaces/authenticated-request.interface";
 
 interface TokenPayload {
   sub: string;
@@ -23,6 +21,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     configService: ConfigService,
     private readonly usersService: UsersService,
+    private readonly databaseService: DatabaseService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -32,23 +31,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(
-    req: AuthenticatedRequest,
-    payload: TokenPayload,
-  ): Promise<JwtPayload> {
-    const tenantConnection = req.tenantConnection;
+  async validate(req: AuthenticatedRequest, payload: TokenPayload): Promise<JwtPayload> {
+    // Use the user's tenant from the JWT payload, not the request's tenant
+    // This allows users to view posts from other tenants while staying authenticated
+    const userTenantDbName = `conduit_tenant_${payload.tenantId}`;
+    const userTenantConnection = await this.databaseService.getTenantConnection(userTenantDbName);
 
-    if (!tenantConnection) {
-      this.logger.error("Missing tenantConnection");
-      throw new UnauthorizedException(
-        "Tenant context missing for auth validation",
-      );
-    }
-
-    const user = await this.usersService.findById(
-      tenantConnection,
-      payload.sub,
-    );
+    const user = await this.usersService.findById(userTenantConnection, payload.sub);
 
     if (user && user.isActive) {
       return {
@@ -80,6 +69,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     if (!user || !user.isActive) {
       this.logger.warn(`User validation failed for sub: ${payload.sub}`);
+      return null;
     }
     throw new UnauthorizedException("User not found or inactive");
   }

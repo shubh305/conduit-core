@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Patch,
-  Body,
-  Req,
-  UseGuards,
-  BadRequestException,
-} from "@nestjs/common";
+import { Controller, Get, Patch, Body, Req, UseGuards, BadRequestException } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { Request } from "express";
 import { Connection } from "mongoose";
@@ -31,10 +23,7 @@ export class SiteSettingsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Update site settings (Admin/Owner only)" })
-  async updateSettings(
-    @Req() req: Request,
-    @Body() dto: UpdateSiteSettingsDto,
-  ) {
+  async updateSettings(@Req() req: Request, @Body() dto: UpdateSiteSettingsDto) {
     const connection = req["tenantConnection"] as Connection;
     return this.service.updateSettings(connection, dto);
   }

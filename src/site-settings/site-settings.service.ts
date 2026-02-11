@@ -16,10 +16,7 @@ export class SiteSettingsService {
     return settings;
   }
 
-  async updateSettings(
-    connection: Connection,
-    dto: UpdateSiteSettingsDto,
-  ): Promise<SiteSettingsDocument> {
+  async updateSettings(connection: Connection, dto: UpdateSiteSettingsDto): Promise<SiteSettingsDocument> {
     return this.repository.upsert(connection, dto);
   }
 }
