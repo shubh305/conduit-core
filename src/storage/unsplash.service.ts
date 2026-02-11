@@ -9,9 +9,7 @@ export class UnsplashService {
 
   constructor(private configService: ConfigService) {
     this.accessKey = this.configService.get<string>("UNSPLASH_ACCESS_KEY");
-    this.baseUrl =
-      this.configService.get<string>("UNSPLASH_API_URL") ||
-      "https://api.unsplash.com";
+    this.baseUrl = this.configService.get<string>("UNSPLASH_API_URL") || "https://api.unsplash.com";
   }
 
   async searchPhotos(query: string, page = 1, perPage = 20) {
@@ -22,9 +20,7 @@ export class UnsplashService {
 
     try {
       const response = await fetch(
-        `${this.baseUrl}/search/photos?query=${encodeURIComponent(
-          query,
-        )}&page=${page}&per_page=${perPage}`,
+        `${this.baseUrl}/search/photos?query=${encodeURIComponent(query)}&page=${page}&per_page=${perPage}`,
         {
           headers: {
             Authorization: `Client-ID ${this.accessKey}`,
@@ -35,9 +31,7 @@ export class UnsplashService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        this.logger.error(
-          `Unsplash API error: ${response.status} ${JSON.stringify(errorData)}`,
-        );
+        this.logger.error(`Unsplash API error: ${response.status} ${JSON.stringify(errorData)}`);
         throw new Error(`Unsplash API error: ${response.statusText}`);
       }
 

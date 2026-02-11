@@ -1,13 +1,4 @@
-import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
-  IsArray,
-  IsEnum,
-  IsObject,
-  IsDateString,
-  IsNumber,
-} from "class-validator";
+import { IsString, IsNotEmpty, IsOptional, IsArray, IsEnum, IsObject, IsDateString, IsNumber } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 import { TiptapContent } from "../schemas/post.schema";
 

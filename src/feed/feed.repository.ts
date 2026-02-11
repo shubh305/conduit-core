@@ -5,24 +5,15 @@ import { FeedItem, FeedItemDocument } from "./schemas/feed-item.schema";
 
 @Injectable()
 export class FeedRepository {
-  constructor(
-    @InjectModel(FeedItem.name) private feedModel: Model<FeedItemDocument>,
-  ) {}
+  constructor(@InjectModel(FeedItem.name) private feedModel: Model<FeedItemDocument>) {}
 
   async upsert(item: Partial<FeedItem>): Promise<FeedItemDocument> {
     return this.feedModel
-      .findOneAndUpdate(
-        { tenantId: item.tenantId, postId: item.postId },
-        { $set: item },
-        { upsert: true, new: true },
-      )
+      .findOneAndUpdate({ tenantId: item.tenantId, postId: item.postId }, { $set: item }, { upsert: true, new: true })
       .exec() as Promise<FeedItemDocument>;
   }
 
-  async delete(
-    tenantId: string,
-    postId: string,
-  ): Promise<{ deletedCount: number }> {
+  async delete(tenantId: string, postId: string): Promise<{ deletedCount: number }> {
     return this.feedModel.deleteOne({ tenantId, postId }).exec();
   }
 
@@ -30,14 +21,8 @@ export class FeedRepository {
     return this.feedModel.deleteMany({ tenantId }).exec();
   }
 
-  async updateLikes(
-    postId: string,
-    userId: string,
-    increment: boolean,
-  ): Promise<void> {
-    const query = increment
-      ? { postId, likedBy: { $ne: userId } }
-      : { postId, likedBy: userId };
+  async updateLikes(postId: string, userId: string, increment: boolean): Promise<void> {
+    const query = increment ? { postId, likedBy: { $ne: userId } } : { postId, likedBy: userId };
     const update = increment
       ? { $addToSet: { likedBy: userId }, $inc: { likesCount: 1 } }
       : { $pull: { likedBy: userId }, $inc: { likesCount: -1 } };
@@ -46,9 +31,7 @@ export class FeedRepository {
   }
 
   async updateCommentsCount(postId: string, increment: boolean): Promise<void> {
-    await this.feedModel
-      .updateOne({ postId }, { $inc: { commentsCount: increment ? 1 : -1 } })
-      .exec();
+    await this.feedModel.updateOne({ postId }, { $inc: { commentsCount: increment ? 1 : -1 } }).exec();
   }
 
   async findAll(
@@ -58,6 +41,8 @@ export class FeedRepository {
       sort?: Record<string, 1 | -1>;
       tag?: string;
       ids?: string[];
+      authorUsernames?: string[];
+      authorIds?: string[];
     } = {},
   ): Promise<FeedItemDocument[]> {
     const filter: FilterQuery<FeedItemDocument> = {};
@@ -66,6 +51,12 @@ export class FeedRepository {
     }
     if (options.ids && options.ids.length > 0) {
       filter.postId = { $in: options.ids };
+    }
+    if (options.authorUsernames && options.authorUsernames.length > 0) {
+      filter.authorUsername = { $in: options.authorUsernames };
+    }
+    if (options.authorIds && options.authorIds.length > 0) {
+      filter.authorId = { $in: options.authorIds };
     }
 
     return this.feedModel
@@ -91,29 +82,18 @@ export class FeedRepository {
       filter.tenantId = tenantId;
     }
 
-    return this.feedModel
-      .find(filter)
-      .sort({ publishedAt: -1 })
-      .limit(20)
-      .exec();
+    return this.feedModel.find(filter).sort({ publishedAt: -1 }).limit(20).exec();
   }
 
   async suggest(query: string, tenantId?: string): Promise<FeedItemDocument[]> {
     const filter: FilterQuery<FeedItemDocument> = {
-      $or: [
-        { title: { $regex: query, $options: "i" } },
-        { authorUsername: { $regex: query, $options: "i" } },
-      ],
+      $or: [{ title: { $regex: query, $options: "i" } }, { authorUsername: { $regex: query, $options: "i" } }],
     };
 
     if (tenantId) {
       filter.tenantId = tenantId;
     }
 
-    return this.feedModel
-      .find(filter)
-      .select("title postSlug tenantSlug authorUsername")
-      .limit(5)
-      .exec();
+    return this.feedModel.find(filter).select("title postSlug tenantSlug authorUsername").limit(5).exec();
   }
 }

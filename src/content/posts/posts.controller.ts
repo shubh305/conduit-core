@@ -11,18 +11,17 @@ import {
   Req,
   BadRequestException,
   Logger,
+  Inject,
+  forwardRef,
 } from "@nestjs/common";
-import {
-  ApiTags,
-  ApiOperation,
-  ApiBearerAuth,
-  ApiQuery,
-} from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger";
 import { PostsService } from "./posts.service";
 import { CreatePostDto, UpdatePostDto } from "./dto/post.dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { OptionalJwtAuthGuard } from "../../common/guards/optional-jwt-auth.guard";
 import { AuthenticatedRequest } from "../../common/interfaces/authenticated-request.interface";
+import { UsersService } from "../../users/users.service";
+import { DatabaseService } from "../../database/database.service";
 
 @ApiTags("posts")
 @ApiBearerAuth()
@@ -30,29 +29,24 @@ import { AuthenticatedRequest } from "../../common/interfaces/authenticated-requ
 export class PostsController {
   private readonly logger = new Logger(PostsController.name);
 
-  constructor(private readonly postsService: PostsService) {}
+  constructor(
+    private readonly postsService: PostsService,
+    @Inject(forwardRef(() => UsersService))
+    private readonly usersService: UsersService,
+    private readonly databaseService: DatabaseService,
+  ) {}
 
   @UseGuards(JwtAuthGuard)
   @Post()
   @ApiOperation({ summary: "Create a new post" })
-  async create(
-    @Req() req: AuthenticatedRequest,
-    @Body() createPostDto: CreatePostDto,
-  ) {
+  async create(@Req() req: AuthenticatedRequest, @Body() createPostDto: CreatePostDto) {
     const connection = req.tenantConnection;
     const tenant = req.tenant;
     const user = req.user;
 
     if (!tenant) throw new BadRequestException("Tenant context required");
 
-    return this.postsService.create(
-      connection,
-      tenant,
-      createPostDto,
-      user.id,
-      user.displayName,
-      user.username,
-    );
+    return this.postsService.create(connection, tenant, createPostDto, user.id, user.displayName, user.username);
   }
 
   @Get()
@@ -101,10 +95,8 @@ export class PostsController {
     if (search) {
       const data = await this.postsService.search(connection, search);
 
-      const filteredData = data.filter((p) =>
-        !user
-          ? p.status === "published"
-          : p.status === "published" || p.authorId === user.id,
+      const filteredData = data.filter(p =>
+        !user ? p.status === "published" : p.status === "published" || p.authorId === user.id,
       );
 
       // Mock pagination for search for now
@@ -130,7 +122,15 @@ export class PostsController {
       );
     }
 
-    const mappedData = result.data.map((post) => {
+    let followingIds: string[] = [];
+    if (user) {
+      const freshUser = await this.usersService.findByIdWithFollowing(connection, user.id);
+      if (freshUser && freshUser.following) {
+        followingIds = freshUser.following.map(id => id.toString());
+      }
+    }
+
+    const mappedData = result.data.map(post => {
       const p = post.toObject ? post.toObject() : post;
       return {
         ...p,
@@ -139,6 +139,7 @@ export class PostsController {
         tenantName: p.tenantName || tenant?.name,
         postSlug: p.slug,
         isLiked: user ? (p.likedBy || []).includes(user.id) : false,
+        isFollowing: user ? followingIds.includes(p.authorId?.toString()) : false,
       };
     });
 
@@ -148,10 +149,7 @@ export class PostsController {
   @Get(":idOrSlug")
   @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: "Get post by ID or Slug" })
-  async findOne(
-    @Req() req: AuthenticatedRequest,
-    @Param("idOrSlug") idOrSlug: string,
-  ) {
+  async findOne(@Req() req: AuthenticatedRequest, @Param("idOrSlug") idOrSlug: string) {
     const connection = req.tenantConnection;
     const user = req.user;
     let post;
@@ -169,20 +167,32 @@ export class PostsController {
     if (!post) return null;
 
     const p = post.toObject ? post.toObject() : post;
+    let isFollowing = false;
+
+    if (user && p.authorId) {
+      // Get user's tenant connection to fetch their following list
+      const userTenantDbName = `conduit_tenant_${user.tenantId}`;
+      const userTenantConnection = await this.databaseService.getTenantConnection(userTenantDbName);
+
+      const fullUser = await this.usersService.findByIdWithFollowing(userTenantConnection, user.id);
+
+      if (fullUser && fullUser.following) {
+        const followingIds = fullUser.following.map((f: any) => (f._id || f).toString());
+        isFollowing = followingIds.includes(p.authorId.toString());
+      }
+    }
+
     return {
       ...p,
       isLiked: user ? (p.likedBy || []).includes(user.id) : false,
+      isFollowing,
     };
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch(":id")
   @ApiOperation({ summary: "Update a post" })
-  async update(
-    @Req() req: AuthenticatedRequest,
-    @Param("id") id: string,
-    @Body() updatePostDto: UpdatePostDto,
-  ) {
+  async update(@Req() req: AuthenticatedRequest, @Param("id") id: string, @Body() updatePostDto: UpdatePostDto) {
     const connection = req.tenantConnection;
     const tenant = req.tenant;
     return this.postsService.update(connection, id, updatePostDto, tenant);
@@ -210,11 +220,7 @@ export class PostsController {
   @UseGuards(JwtAuthGuard)
   @Post(":id/schedule")
   @ApiOperation({ summary: "Schedule a post for future publication" })
-  async schedule(
-    @Req() req: AuthenticatedRequest,
-    @Param("id") id: string,
-    @Body() body: { scheduledAt: string },
-  ) {
+  async schedule(@Req() req: AuthenticatedRequest, @Param("id") id: string, @Body() body: { scheduledAt: string }) {
     const connection = req.tenantConnection;
     const scheduledAt = new Date(body.scheduledAt);
     if (isNaN(scheduledAt.getTime())) {

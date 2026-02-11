@@ -35,6 +35,9 @@ export class FeedItem {
   @Prop({ required: true })
   authorName: string;
 
+  @Prop({ required: true, index: true })
+  authorId: string;
+
   @Prop({ required: true })
   authorUsername: string;
 

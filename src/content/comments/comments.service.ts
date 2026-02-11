@@ -32,41 +32,25 @@ export class CommentsService {
 
     await connection
       .model(Post.name, PostSchema)
-      .updateOne(
-        { _id: new Types.ObjectId(postId) },
-        { $inc: { commentsCount: 1 } },
-      )
+      .updateOne({ _id: new Types.ObjectId(postId) }, { $inc: { commentsCount: 1 } })
       .exec();
 
     this.feedService
       .updateCommentsCount(postId, true)
-      .catch((err) =>
-        console.error("Failed to sync comment count to feed", err),
-      );
+      .catch(err => console.error("Failed to sync comment count to feed", err));
 
     return comment;
   }
 
-  async findByPostId(
-    connection: Connection,
-    postId: string,
-  ): Promise<CommentDocument[]> {
+  async findByPostId(connection: Connection, postId: string): Promise<CommentDocument[]> {
     return this.commentsRepository.findByPostId(connection, postId);
   }
 
-  async incrementLikes(
-    connection: Connection,
-    id: string,
-    userId: string,
-  ): Promise<void> {
+  async incrementLikes(connection: Connection, id: string, userId: string): Promise<void> {
     return this.commentsRepository.incrementLikes(connection, id, userId);
   }
 
-  async decrementLikes(
-    connection: Connection,
-    id: string,
-    userId: string,
-  ): Promise<void> {
+  async decrementLikes(connection: Connection, id: string, userId: string): Promise<void> {
     return this.commentsRepository.decrementLikes(connection, id, userId);
   }
 }

@@ -34,9 +34,7 @@ export class SearchService {
     if (!query) return [];
 
     const [users, posts, tags] = await Promise.all([
-      connection
-        ? this.usersService.suggest(connection, query)
-        : Promise.resolve([]),
+      connection ? this.usersService.suggest(connection, query) : Promise.resolve([]),
       this.feedService.suggest(query),
       this.tagsService.search(query),
     ]);
@@ -48,15 +46,11 @@ export class SearchService {
       url?: string;
     }> = [];
 
-    tags.forEach((tag) =>
-      suggestions.push({ type: "tag", text: `#${tag.slug}`, id: tag._id }),
-    );
+    tags.forEach(tag => suggestions.push({ type: "tag", text: `#${tag.slug}`, id: tag._id }));
 
-    users.forEach((user) =>
-      suggestions.push({ type: "user", text: user.username, id: user._id }),
-    );
+    users.forEach(user => suggestions.push({ type: "user", text: user.username, id: user._id }));
 
-    posts.forEach((post) =>
+    posts.forEach(post =>
       suggestions.push({
         type: "post",
         text: post.title,

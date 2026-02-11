@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
-  Req,
-  UseGuards,
-} from "@nestjs/common";
+import { Controller, Get, Post, Body, Param, Req, UseGuards } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { CommentsService } from "./comments.service";
 import { CreateCommentDto } from "./dto/create-comment.dto";
@@ -34,10 +26,7 @@ export class CommentsActionsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Unlike a comment" })
-  async unlike(
-    @Req() req: AuthenticatedRequest,
-    @Param("id") commentId: string,
-  ) {
+  async unlike(@Req() req: AuthenticatedRequest, @Param("id") commentId: string) {
     const connection = req.tenantConnection;
     const user = req.user;
     await this.commentsService.decrementLikes(connection, commentId, user.id);
@@ -53,21 +42,15 @@ export class CommentsController {
   @Get()
   @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: "Get comments for a post" })
-  async getComments(
-    @Req() req: AuthenticatedRequest,
-    @Param("id") postId: string,
-  ) {
+  async getComments(@Req() req: AuthenticatedRequest, @Param("id") postId: string) {
     const connection = req.tenantConnection;
     const user = req.user;
-    const comments = await this.commentsService.findByPostId(
-      connection,
-      postId,
-    );
+    const comments = await this.commentsService.findByPostId(connection, postId);
 
     const commentMap = new Map();
     const roots = [];
 
-    const rawComments = comments.map((c) => {
+    const rawComments = comments.map(c => {
       const json = c.toObject ? c.toObject() : c;
       return {
         ...json,
@@ -78,9 +61,9 @@ export class CommentsController {
       };
     });
 
-    rawComments.forEach((c) => commentMap.set(c.id.toString(), c));
+    rawComments.forEach(c => commentMap.set(c.id.toString(), c));
 
-    rawComments.forEach((c) => {
+    rawComments.forEach(c => {
       if (c.parentId && commentMap.has(c.parentId)) {
         commentMap.get(c.parentId).children.push(c);
       } else {
@@ -95,11 +78,7 @@ export class CommentsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Add a comment to a post" })
-  async createComment(
-    @Req() req: AuthenticatedRequest,
-    @Param("id") postId: string,
-    @Body() dto: CreateCommentDto,
-  ) {
+  async createComment(@Req() req: AuthenticatedRequest, @Param("id") postId: string, @Body() dto: CreateCommentDto) {
     const connection = req.tenantConnection;
     const user = req.user;
 

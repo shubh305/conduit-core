@@ -26,10 +26,7 @@ export class PostsService {
     authorName: string,
     authorUsername: string,
   ): Promise<PostDocument> {
-    const slug = await this.generateUniqueSlug(
-      connection,
-      createPostDto.slug || createPostDto.title,
-    );
+    const slug = await this.generateUniqueSlug(connection, createPostDto.slug || createPostDto.title);
 
     const post = await this.postsRepository.create(connection, {
       ...createPostDto,
@@ -40,8 +37,7 @@ export class PostsService {
       tenantId: tenant["_id"]
         ? (tenant["_id"] as unknown as string).toString()
         : (tenant as unknown as { id: string }).id,
-      publishedAt:
-        createPostDto.status === "published" ? new Date() : undefined,
+      publishedAt: createPostDto.status === "published" ? new Date() : undefined,
       scheduledAt:
         createPostDto.status === "scheduled" && createPostDto.scheduledAt
           ? new Date(createPostDto.scheduledAt)
@@ -50,9 +46,7 @@ export class PostsService {
 
     if (post.status === "published") {
       await this.feedService.syncPostToFeed(
-        tenant["_id"]
-          ? (tenant["_id"] as unknown as string).toString()
-          : (tenant as unknown as { id: string }).id,
+        tenant["_id"] ? (tenant["_id"] as unknown as string).toString() : (tenant as unknown as { id: string }).id,
         tenant.slug,
         tenant.name,
         authorUsername,
@@ -108,10 +102,7 @@ export class PostsService {
     return post;
   }
 
-  async findBySlug(
-    connection: Connection,
-    slug: string,
-  ): Promise<PostDocument | null> {
+  async findBySlug(connection: Connection, slug: string): Promise<PostDocument | null> {
     return this.postsRepository.findBySlug(connection, slug);
   }
 
@@ -119,20 +110,12 @@ export class PostsService {
     return this.postsRepository.search(connection, query);
   }
 
-  async incrementLikes(
-    connection: Connection,
-    id: string,
-    userId: string,
-  ): Promise<void> {
+  async incrementLikes(connection: Connection, id: string, userId: string): Promise<void> {
     await this.postsRepository.incrementLikes(connection, id, userId);
     this.feedService.updateLikes(id, userId, true).catch(() => {});
   }
 
-  async decrementLikes(
-    connection: Connection,
-    id: string,
-    userId: string,
-  ): Promise<void> {
+  async decrementLikes(connection: Connection, id: string, userId: string): Promise<void> {
     await this.postsRepository.decrementLikes(connection, id, userId);
     this.feedService.updateLikes(id, userId, false).catch(() => {});
   }
@@ -161,9 +144,7 @@ export class PostsService {
 
     if (updated && tenant && updated.status === "published") {
       await this.feedService.syncPostToFeed(
-        tenant["_id"]
-          ? (tenant["_id"] as unknown as string).toString()
-          : (tenant as unknown as { id: string }).id,
+        tenant["_id"] ? (tenant["_id"] as unknown as string).toString() : (tenant as unknown as { id: string }).id,
         tenant.slug,
         tenant.name,
         updated.authorUsername,
@@ -190,38 +171,24 @@ export class PostsService {
     return updated;
   }
 
-  async restore(
-    connection: Connection,
-    id: string,
-    tenant?: Tenant,
-  ): Promise<PostDocument> {
+  async restore(connection: Connection, id: string, tenant?: Tenant): Promise<PostDocument> {
     const updated = await this.postsRepository.restore(connection, id);
     if (!updated) throw new NotFoundException("Post not found");
 
     if (updated.status === "published" && (updated.tenantId || tenant)) {
       const tId = tenant
-        ? (tenant["_id"] as unknown as string)?.toString() ||
-          (tenant as unknown as { id: string }).id
+        ? (tenant["_id"] as unknown as string)?.toString() || (tenant as unknown as { id: string }).id
         : updated.tenantId?.toString();
       const tSlug = tenant?.slug || "";
       const tName = tenant?.name || "";
 
-      await this.feedService.syncPostToFeed(
-        tId,
-        tSlug,
-        tName,
-        updated.authorUsername || "",
-        updated,
-      );
+      await this.feedService.syncPostToFeed(tId, tSlug, tName, updated.authorUsername || "", updated);
     }
 
     return updated;
   }
 
-  private async generateUniqueSlug(
-    connection: Connection,
-    baseText: string,
-  ): Promise<string> {
+  private async generateUniqueSlug(connection: Connection, baseText: string): Promise<string> {
     const baseSlug = slugify(baseText, { lower: true, strict: true });
     let slug = baseSlug;
     let counter = 1;
@@ -240,11 +207,7 @@ export class PostsService {
     });
   }
 
-  async publishScheduledPost(
-    connection: Connection,
-    post: PostDocument,
-    tenant: Tenant,
-  ): Promise<void> {
+  async publishScheduledPost(connection: Connection, post: PostDocument, tenant: Tenant): Promise<void> {
     const updated = await this.postsRepository.update(connection, post.id, {
       status: "published",
       publishedAt: new Date(),
@@ -253,14 +216,20 @@ export class PostsService {
 
     if (updated) {
       await this.feedService.syncPostToFeed(
-        tenant["_id"]
-          ? (tenant["_id"] as unknown as string).toString()
-          : (tenant as unknown as { id: string }).id,
+        tenant["_id"] ? (tenant["_id"] as unknown as string).toString() : (tenant as unknown as { id: string }).id,
         tenant.slug,
         tenant.name,
         updated.authorUsername,
         updated,
       );
     }
+  }
+
+  async countByAuthor(connection: Connection, authorId: string, status: string = "published"): Promise<number> {
+    return this.postsRepository.count(connection, {
+      authorId,
+      status,
+      deletedAt: { $exists: false },
+    });
   }
 }

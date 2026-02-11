@@ -1,49 +1,29 @@
 import { Injectable } from "@nestjs/common";
 import { Connection, Model, Types } from "mongoose";
-import {
-  Comment,
-  CommentSchema,
-  CommentDocument,
-} from "./schemas/comment.schema";
+import { Comment, CommentSchema, CommentDocument } from "./schemas/comment.schema";
 
 @Injectable()
 export class CommentsRepository {
   private getModel(connection: Connection): Model<CommentDocument> {
-    return connection.model(
-      Comment.name,
-      CommentSchema,
-    ) as unknown as Model<CommentDocument>;
+    return connection.model(Comment.name, CommentSchema) as unknown as Model<CommentDocument>;
   }
 
-  async create(
-    connection: Connection,
-    data: Partial<Comment>,
-  ): Promise<CommentDocument> {
+  async create(connection: Connection, data: Partial<Comment>): Promise<CommentDocument> {
     const model = this.getModel(connection);
     return new model(data).save();
   }
 
-  async findByPostId(
-    connection: Connection,
-    postId: string,
-  ): Promise<CommentDocument[]> {
+  async findByPostId(connection: Connection, postId: string): Promise<CommentDocument[]> {
     const model = this.getModel(connection);
     return model.find({ postId }).sort({ createdAt: 1 }).exec();
   }
 
-  async findById(
-    connection: Connection,
-    id: string,
-  ): Promise<CommentDocument | null> {
+  async findById(connection: Connection, id: string): Promise<CommentDocument | null> {
     const model = this.getModel(connection);
     return model.findById(id).exec();
   }
 
-  async incrementLikes(
-    connection: Connection,
-    id: string,
-    userId: string,
-  ): Promise<void> {
+  async incrementLikes(connection: Connection, id: string, userId: string): Promise<void> {
     const model = this.getModel(connection);
     const objectId = new Types.ObjectId(id);
 
@@ -58,11 +38,7 @@ export class CommentsRepository {
       .exec();
   }
 
-  async decrementLikes(
-    connection: Connection,
-    id: string,
-    userId: string,
-  ): Promise<void> {
+  async decrementLikes(connection: Connection, id: string, userId: string): Promise<void> {
     const model = this.getModel(connection);
     const objectId = new Types.ObjectId(id);
 

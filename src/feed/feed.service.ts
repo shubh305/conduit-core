@@ -23,22 +23,29 @@ export class FeedService {
       return;
     }
 
+    const p = post.toObject ? post.toObject() : post;
     const feedItem: Partial<FeedItem> = {
       tenantId,
       tenantSlug,
       tenantName,
-      postId: post._id.toString(),
-      postSlug: post.slug,
-      title: post.title,
-      excerpt: post.excerpt,
-      featuredImage: post.featuredImage,
-      featuredImageAttribution: post.featuredImageAttribution,
-      authorName: post.authorName,
-      authorUsername: authorUsername,
-      authorAvatar: post.authorAvatar,
-      publishedAt: post.publishedAt || new Date(),
-      tags: post.tags,
+      postId: p._id.toString(),
+      postSlug: p.slug,
+      title: p.title,
+      excerpt: p.excerpt,
+      featuredImage: p.featuredImage,
+      featuredImageAttribution: p.featuredImageAttribution,
+      authorName: p.authorName,
+      authorId: p.authorId?.toString(),
+      authorUsername: authorUsername || p.authorUsername,
+      authorAvatar: p.authorAvatar,
+      publishedAt: p.publishedAt || new Date(),
+      tags: p.tags,
     };
+
+    if (!feedItem.authorId) {
+      console.warn(`[FeedService] Missing authorId for post ${p._id}, skipping sync`);
+      return;
+    }
 
     await this.feedRepository.upsert(feedItem);
     if (post.tags) {
@@ -46,11 +53,7 @@ export class FeedService {
     }
   }
 
-  async updateLikes(
-    postId: string,
-    userId: string,
-    increment: boolean,
-  ): Promise<void> {
+  async updateLikes(postId: string, userId: string, increment: boolean): Promise<void> {
     return this.feedRepository.updateLikes(postId, userId, increment);
   }
 
@@ -63,9 +66,11 @@ export class FeedService {
     limit: number = 20,
     tag?: string,
     ids?: string[],
+    authorUsernames?: string[],
+    authorIds?: string[],
   ) {
     const skip = (page - 1) * limit;
-    return this.feedRepository.findAll({ skip, limit, tag, ids });
+    return this.feedRepository.findAll({ skip, limit, tag, ids, authorUsernames, authorIds });
   }
 
   async deletePostFromFeed(tenantId: string, postId: string, tags?: string[]) {

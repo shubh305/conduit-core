@@ -5,14 +5,12 @@ import { GlobalTag, GlobalTagDocument } from "./schemas/global-tag.schema";
 
 @Injectable()
 export class TagsService {
-  constructor(
-    @InjectModel(GlobalTag.name) private tagModel: Model<GlobalTagDocument>,
-  ) {}
+  constructor(@InjectModel(GlobalTag.name) private tagModel: Model<GlobalTagDocument>) {}
 
   async incrementCounts(tags: string[]) {
     if (!tags || tags.length === 0) return;
 
-    const operations = tags.map((tag) => ({
+    const operations = tags.map(tag => ({
       updateOne: {
         filter: { slug: tag },
         update: {
@@ -29,7 +27,7 @@ export class TagsService {
   async decrementCounts(tags: string[]) {
     if (!tags || tags.length === 0) return;
 
-    const operations = tags.map((tag) => ({
+    const operations = tags.map(tag => ({
       updateOne: {
         filter: { slug: tag },
         update: { $inc: { postsCount: -1 } },

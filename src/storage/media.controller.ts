@@ -12,13 +12,7 @@ import {
   Body,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import {
-  ApiTags,
-  ApiConsumes,
-  ApiBody,
-  ApiOperation,
-  ApiBearerAuth,
-} from "@nestjs/swagger";
+import { ApiTags, ApiConsumes, ApiBody, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { StorageService } from "./storage.service";
 import { UnsplashService } from "./unsplash.service";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
@@ -38,10 +32,7 @@ export class MediaController {
 
   @Get("unsplash/search")
   @ApiOperation({ summary: "Search photos on Unsplash" })
-  async searchUnsplash(
-    @Query("query") query: string,
-    @Query("page") page: number,
-  ) {
+  async searchUnsplash(@Query("query") query: string, @Query("page") page: number) {
     return this.unsplashService.searchPhotos(query, page);
   }
 
@@ -66,10 +57,7 @@ export class MediaController {
     },
   })
   @ApiOperation({ summary: "Upload an image" })
-  async uploadFile(
-    @UploadedFile() file: Express.Multer.File,
-    @Req() req: Request,
-  ) {
+  async uploadFile(@UploadedFile() file: Express.Multer.File, @Req() req: Request) {
     if (!file) {
       throw new BadRequestException("File is required");
     }
@@ -84,12 +72,7 @@ export class MediaController {
     const filename = `${tenantId}/${Date.now()}-${file.originalname}`;
 
     try {
-      const url = await this.storageService.uploadImage(
-        filename,
-        file.buffer,
-        bucket,
-        file.mimetype,
-      );
+      const url = await this.storageService.uploadImage(filename, file.buffer, bucket, file.mimetype);
       return {
         url,
         filename: file.originalname,

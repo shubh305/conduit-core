@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  UseGuards,
-  Req,
-} from "@nestjs/common";
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from "@nestjs/common";
 import { ApiTags, ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { ListsService } from "./lists.service";
@@ -51,11 +41,7 @@ export class ListsController {
 
   @Patch(":id")
   @ApiOperation({ summary: "Update a reading list" })
-  update(
-    @Req() req,
-    @Param("id") id: string,
-    @Body() updateListDto: UpdateListDto,
-  ) {
+  update(@Req() req, @Param("id") id: string, @Body() updateListDto: UpdateListDto) {
     const userId = req.user["id"] || req.user["sub"];
     return this.listsService.update(id, userId, updateListDto);
   }
@@ -76,11 +62,7 @@ export class ListsController {
 
   @Delete(":id/items/:postId")
   @ApiOperation({ summary: "Remove a post from a reading list" })
-  removeItem(
-    @Req() req,
-    @Param("id") id: string,
-    @Param("postId") postId: string,
-  ) {
+  removeItem(@Req() req, @Param("id") id: string, @Param("postId") postId: string) {
     const userId = req.user["id"] || req.user["sub"];
     return this.listsService.removeItem(id, userId, postId);
   }

@@ -6,6 +6,7 @@ import { FeedItem, FeedItemSchema } from "./schemas/feed-item.schema";
 import { FeedController } from "./feed.controller";
 import { TagsService } from "./tags.service";
 import { GlobalTag, GlobalTagSchema } from "./schemas/global-tag.schema";
+import { UsersModule } from "../users/users.module";
 
 @Global()
 @Module({
@@ -14,6 +15,7 @@ import { GlobalTag, GlobalTagSchema } from "./schemas/global-tag.schema";
       { name: FeedItem.name, schema: FeedItemSchema },
       { name: GlobalTag.name, schema: GlobalTagSchema },
     ]),
+    UsersModule,
   ],
   controllers: [FeedController],
   providers: [FeedService, FeedRepository, TagsService],

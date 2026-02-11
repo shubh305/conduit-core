@@ -5,11 +5,7 @@ import { ListsService } from "./lists.service";
 import { ReadingList, ReadingListSchema } from "./schemas/reading-list.schema";
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([
-      { name: ReadingList.name, schema: ReadingListSchema },
-    ]),
-  ],
+  imports: [MongooseModule.forFeature([{ name: ReadingList.name, schema: ReadingListSchema }])],
   controllers: [ListsController],
   providers: [ListsService],
   exports: [ListsService],
