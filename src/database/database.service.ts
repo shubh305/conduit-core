@@ -41,7 +41,6 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
 
     const uri = this.configService.get<string>("MONGO_URI");
     const prefix = this.configService.get<string>("TENANT_DB_PREFIX") || "conduit_tenant_";
-
     if (!databaseName.startsWith(prefix)) {
       throw new Error(`Invalid tenant database name: ${databaseName}`);
     }

@@ -27,8 +27,7 @@ export class SchedulerService {
       for (const tenant of tenants) {
         try {
           const tenantId = tenant.id || tenant._id.toString();
-          const prefix = this.configService.get("TENANT_DB_PREFIX", "conduit_tenant_");
-          const databaseName = `${prefix}${tenantId}`;
+          const databaseName = this.databaseService.getTenantDatabaseName(tenantId);
 
           const connection = await this.databaseService.getTenantConnection(databaseName);
           const duePosts = await this.postsService.findScheduledPostsDue(connection);

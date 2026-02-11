@@ -171,7 +171,7 @@ export class PostsController {
 
     if (user && p.authorId) {
       // Get user's tenant connection to fetch their following list
-      const userTenantDbName = `conduit_tenant_${user.tenantId}`;
+      const userTenantDbName = this.databaseService.getTenantDatabaseName(user.tenantId);
       const userTenantConnection = await this.databaseService.getTenantConnection(userTenantDbName);
 
       const fullUser = await this.usersService.findByIdWithFollowing(userTenantConnection, user.id);
