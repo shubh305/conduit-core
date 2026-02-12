@@ -1,5 +1,6 @@
 import { Injectable, UnauthorizedException, ConflictException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
+import { ConfigService } from "@nestjs/config";
 import { Connection } from "mongoose";
 import * as bcrypt from "bcrypt";
 import { UsersService } from "../users/users.service";
@@ -11,6 +12,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   async signup(connection: Connection, tenantId: string, dto: SignupDto) {
@@ -48,6 +50,29 @@ export class AuthService {
     return this.generateTokens(user, tenantId);
   }
 
+  async refresh(refreshToken: string) {
+    try {
+      const payload = this.jwtService.verify(refreshToken);
+
+      const newPayload = {
+        sub: payload.sub,
+        email: payload.email,
+        username: payload.username,
+        role: payload.role,
+        tenantId: payload.tenantId,
+      };
+
+      const refreshExpiry = this.configService.get<string>("JWT_REFRESH_EXPIRY") || "7d";
+
+      return {
+        accessToken: this.jwtService.sign(newPayload),
+        refreshToken: this.jwtService.sign(newPayload, { expiresIn: refreshExpiry }),
+      };
+    } catch (e) {
+      throw new UnauthorizedException("Invalid refresh token");
+    }
+  }
+
   private generateTokens(user: UserDocument, tenantId: string) {
     const payload = {
       sub: user._id.toString(),
@@ -57,8 +82,11 @@ export class AuthService {
       tenantId: tenantId,
     };
 
+    const refreshExpiry = this.configService.get<string>("JWT_REFRESH_EXPIRY") || "7d";
+
     return {
       accessToken: this.jwtService.sign(payload),
+      refreshToken: this.jwtService.sign(payload, { expiresIn: refreshExpiry }),
       user: {
         id: user._id,
         email: user.email,

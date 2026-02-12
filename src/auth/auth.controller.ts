@@ -46,4 +46,12 @@ export class AuthController {
   getProfile(@Req() req: Request) {
     return req.user;
   }
+
+  @Post("refresh")
+  async refresh(@Body("refreshToken") refreshToken: string) {
+    if (!refreshToken) {
+      throw new BadRequestException("Refresh token required");
+    }
+    return this.authService.refresh(refreshToken);
+  }
 }
