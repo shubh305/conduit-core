@@ -25,12 +25,24 @@ async function bootstrap() {
 
   const port = configService.get<number>("PORT") || 4000;
   const apiPrefix = configService.get<string>("API_PREFIX") || "api";
-  const corsOrigins = configService.get<string>("CORS_ORIGINS")
-    ? configService.get<string>("CORS_ORIGINS").split(",")
-    : ["http://localhost:3000"];
+  const allowedOrigins = configService.get<string>("CORS_ORIGINS")?.split(",") || ["http://localhost:3001"];
 
   app.enableCors({
-    origin: corsOrigins,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+
+      // Check if it's a subdomain of any allowed base origin
+      const isSubdomain = allowedOrigins.some(base => {
+        try {
+          const host = new URL(base).host;
+          return origin.endsWith(`.${host}`);
+        } catch {
+          return false;
+        }
+      });
+
+      callback(null, isSubdomain);
+    },
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization", "x-tenant-id"],
   });
