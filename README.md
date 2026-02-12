@@ -39,7 +39,7 @@ src/
 
 ## Prerequisites
 
-- **Node.js**: v18 or later
+- **Node.js**: v20 or later
 - **MongoDB**: A running instance (or Docker)
 - **Unsplash API Key**: For integrated image search (Optional)
 
