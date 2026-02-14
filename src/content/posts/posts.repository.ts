@@ -23,8 +23,7 @@ export class PostsRepository {
     options: {
       skip?: number;
       limit?: number;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      sort?: any;
+      sort?: string | Record<string, 1 | -1>;
     } = {},
   ): Promise<PostDocument[]> {
     const postModel = this.getModel(connection);

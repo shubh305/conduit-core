@@ -3,15 +3,17 @@ import { Connection, FilterQuery } from "mongoose";
 import slugify from "slugify";
 import { PostsRepository } from "./posts.repository";
 import { CreatePostDto, UpdatePostDto } from "./dto/post.dto";
-import { PostDocument } from "./schemas/post.schema";
+import { PostDocument, TiptapNode, TiptapContent } from "./schemas/post.schema";
 import { FeedService } from "../../feed/feed.service";
 import { Tenant } from "../../tenants/schemas/tenant.schema";
+import { SemanticSearchService } from "../../search/semantic-search.service";
 
 @Injectable()
 export class PostsService {
   constructor(
     private readonly postsRepository: PostsRepository,
     private readonly feedService: FeedService,
+    private readonly semanticSearchService: SemanticSearchService,
   ) {}
 
   /**
@@ -52,6 +54,7 @@ export class PostsService {
         authorUsername,
         post,
       );
+      await this.ingestPost(post, tenant);
     }
 
     return post;
@@ -150,6 +153,7 @@ export class PostsService {
         updated.authorUsername,
         updated,
       );
+      await this.ingestPost(updated, tenant);
     }
 
     return updated!;
@@ -231,5 +235,70 @@ export class PostsService {
       status,
       deletedAt: { $exists: false },
     });
+  }
+
+  async getCounts(connection: Connection, authorId: string) {
+    const [published, drafts, scheduled, deleted] = await Promise.all([
+      this.postsRepository.count(connection, { authorId, status: "published", deletedAt: { $exists: false } }),
+      this.postsRepository.count(connection, { authorId, status: "draft", deletedAt: { $exists: false } }),
+      this.postsRepository.count(connection, { authorId, status: "scheduled", deletedAt: { $exists: false } }),
+      this.postsRepository.count(connection, { authorId, deletedAt: { $exists: true } }),
+    ]);
+
+    return {
+      published,
+      drafts,
+      scheduled,
+      deleted,
+      unlisted: 0,
+    };
+  }
+
+  async updateSummary(connection: Connection, id: string, summary: string): Promise<PostDocument | null> {
+    return this.postsRepository.update(connection, id, { summary });
+  }
+
+  private async ingestPost(post: PostDocument | null, tenant?: Tenant) {
+    if (!post || post.status !== "published") return;
+
+    const tenantSlug = tenant?.slug || "conduit";
+    const tenantName = tenant?.name || "Conduit";
+
+    const postUrl = `https://${tenantSlug}.octanebrew.dev/${post.slug}`;
+
+    this.semanticSearchService
+      .ingestEntity(
+        "blog_post",
+        post["_id"]?.toString() || post.id,
+        {
+          title: post.title,
+          text: this.parseTiptapToText(post.content),
+          url: postUrl,
+        },
+        {
+          slug: post.slug,
+          authorName: post.authorName,
+          authorUsername: post.authorUsername,
+          authorId: post.authorId,
+          tenantName: tenantName,
+          tenantSlug: tenantSlug,
+          tags: post.tags || [],
+          status: post.status,
+          publishedAt: post.publishedAt,
+          featuredImage: post.featuredImage,
+        },
+        this.semanticSearchService.getTenantIndex(post.tenantId.toString()),
+      )
+      .catch(() => {});
+  }
+
+  private parseTiptapToText(node: TiptapNode | TiptapContent): string {
+    if (!node) return "";
+    if ("text" in node && node.text) return node.text;
+    if (node.content && Array.isArray(node.content)) {
+      const joinChar = node.type === "doc" ? "\n" : " ";
+      return node.content.map(child => this.parseTiptapToText(child)).join(joinChar);
+    }
+    return "";
   }
 }

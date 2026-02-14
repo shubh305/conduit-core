@@ -14,6 +14,7 @@ import {
   forwardRef,
 } from "@nestjs/common";
 import { UsersService } from "./users.service";
+import { UserDocument } from "./schemas/user.schema";
 import { AuthenticatedRequest } from "../common/interfaces/authenticated-request.interface";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
@@ -57,8 +58,7 @@ export class UsersController {
     const fullUser = await this.usersService.findByIdWithFollowing(connection, user.id);
     if (!fullUser) throw new BadRequestException("User not found");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const following = (fullUser.following || []) as any[];
+    const following = (fullUser.following || []) as unknown as UserDocument[];
 
     const publicUsers = following
       .filter(u => u && typeof u === "object" && u.username)

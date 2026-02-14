@@ -7,6 +7,7 @@ import { DatabaseService } from "../database/database.service";
 import { CreateTenantDto } from "./dto/create-tenant.dto";
 import { FeedRepository } from "../feed/feed.repository";
 import { UsersService } from "../users/users.service";
+import { SemanticSearchService } from "../search/semantic-search.service";
 
 @Injectable()
 export class TenantsService {
@@ -17,6 +18,7 @@ export class TenantsService {
     private readonly databaseService: DatabaseService,
     private readonly feedRepository: FeedRepository,
     private readonly usersService: UsersService,
+    private readonly semanticSearchService: SemanticSearchService,
     @InjectConnection() private readonly connection: Connection,
   ) {}
 
@@ -48,6 +50,7 @@ export class TenantsService {
     } as unknown as TenantDocument);
 
     await this.databaseService.createTenantDatabase(tenantId.toString());
+    await this.ingestTenant(tenant);
 
     return tenant;
   }
@@ -105,6 +108,32 @@ export class TenantsService {
 
     const updated = await this.tenantsRepository.update(id, updateData);
     if (!updated) throw new BadRequestException("Failed to update tenant");
+
+    await this.ingestTenant(updated);
+
     return updated;
+  }
+
+  private async ingestTenant(tenant: TenantDocument | null) {
+    if (!tenant) return;
+
+    this.semanticSearchService
+      .ingestEntity(
+        "blog",
+        tenant["_id"]?.toString() || tenant.id,
+        {
+          title: tenant.name,
+          text: tenant.description || tenant.name,
+          url: `https://conduit.octanebrew.dev/${tenant.slug}`,
+        },
+        {
+          slug: tenant.slug,
+          owner: tenant.ownerUsername,
+        },
+        this.semanticSearchService.getMasterIndex(),
+      )
+      .catch(err => {
+        this.logger.warn(`Failed to ingest tenant ${tenant.slug} into search: ${err.message}`);
+      });
   }
 }

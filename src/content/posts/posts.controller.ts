@@ -22,6 +22,7 @@ import { OptionalJwtAuthGuard } from "../../common/guards/optional-jwt-auth.guar
 import { AuthenticatedRequest } from "../../common/interfaces/authenticated-request.interface";
 import { UsersService } from "../../users/users.service";
 import { DatabaseService } from "../../database/database.service";
+import { Types } from "mongoose";
 
 @ApiTags("posts")
 @ApiBearerAuth()
@@ -146,6 +147,15 @@ export class PostsController {
     return { ...result, data: mappedData };
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get("counts")
+  @ApiOperation({ summary: "Get post counts by status" })
+  async getCounts(@Req() req: AuthenticatedRequest) {
+    const connection = req.tenantConnection;
+    const user = req.user;
+    return this.postsService.getCounts(connection, user.id);
+  }
+
   @Get(":idOrSlug")
   @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: "Get post by ID or Slug" })
@@ -177,7 +187,9 @@ export class PostsController {
       const fullUser = await this.usersService.findByIdWithFollowing(userTenantConnection, user.id);
 
       if (fullUser && fullUser.following) {
-        const followingIds = fullUser.following.map((f: any) => (f._id || f).toString());
+        const followingIds = fullUser.following.map((f: Types.ObjectId | { _id: Types.ObjectId }) =>
+          (f instanceof Types.ObjectId ? f : f._id).toString(),
+        );
         isFollowing = followingIds.includes(p.authorId.toString());
       }
     }

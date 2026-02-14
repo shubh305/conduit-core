@@ -31,6 +31,9 @@ export class Post {
   excerpt?: string;
 
   @Prop()
+  summary?: string;
+
+  @Prop()
   featuredImage?: string;
 
   @Prop({ type: MongooseSchema.Types.Mixed })

@@ -2,13 +2,23 @@ import { Injectable } from "@nestjs/common";
 import { Connection } from "mongoose";
 import { UsersRepository } from "./users.repository";
 import { User, UserDocument } from "./schemas/user.schema";
+import { SemanticSearchService } from "../search/semantic-search.service";
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly usersRepository: UsersRepository) {}
+  constructor(
+    private readonly usersRepository: UsersRepository,
+    private readonly semanticSearchService: SemanticSearchService,
+  ) {}
 
   async create(connection: Connection, userData: Partial<User>): Promise<UserDocument> {
-    return this.usersRepository.create(connection, userData);
+    const user = await this.usersRepository.create(connection, userData);
+
+    if (user) {
+      await this.ingestUser(user);
+    }
+
+    return user;
   }
 
   async findByEmail(connection: Connection, email: string): Promise<UserDocument | null> {
@@ -28,7 +38,13 @@ export class UsersService {
   }
 
   async update(connection: Connection, id: string, updateData: Partial<User>): Promise<UserDocument | null> {
-    return this.usersRepository.update(connection, id, updateData);
+    const user = await this.usersRepository.update(connection, id, updateData);
+
+    if (user) {
+      await this.ingestUser(user);
+    }
+
+    return user;
   }
 
   async search(connection: Connection, query: string, excludeIds: string[] = []): Promise<UserDocument[]> {
@@ -66,5 +82,27 @@ export class UsersService {
       isFollowing: false,
       followersCount: targetUser?.followers?.length || 0,
     };
+  }
+
+  private async ingestUser(user: UserDocument | null) {
+    if (!user) return;
+
+    this.semanticSearchService
+      .ingestEntity(
+        "user",
+        user["_id"]?.toString() || user.id,
+        {
+          title: user.username,
+          text: user.bio || user.username,
+          url: `https://conduit.octanebrew.dev/u/${user.username}`,
+        },
+        {
+          username: user.username,
+          email: user.email,
+          avatar: user["avatar"],
+        },
+        this.semanticSearchService.getMasterIndex(),
+      )
+      .catch(() => {});
   }
 }
