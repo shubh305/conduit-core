@@ -44,7 +44,7 @@ export class IngestionResultConsumerService implements OnModuleInit, OnModuleDes
             password: pass,
           }
         : undefined,
-      ssl: brokers.includes(":9092"),
+      ssl: false,
     });
 
     this.consumer = this.kafka.consumer({ groupId: "conduit-ingestion-consumer" });
