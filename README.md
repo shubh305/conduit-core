@@ -38,7 +38,6 @@ The complete authoritative documentation is available in the `docs` directory:
 | [**Operations**](./docs/operations.md) | CI/CD pipelines, containerization, and scaling. |
 | [**User Flows**](./docs/flows.md) | Visual data flow diagrams for provisioning and enrichment. |
 | [**Configuration**](./docs/reference.md) | Environment variables and service reference. |
-| [**Coverage Validation**](./docs/coverage.md) | Proof of 100% backend feature-to-code mapping. |
 
 ---
 
