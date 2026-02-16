@@ -92,6 +92,15 @@ export class Post {
   @Prop({ type: [String], default: [], index: true })
   likedBy: string[];
 
+  @Prop({ type: [String], default: [] })
+  entities: string[];
+
+  @Prop({ type: [String], default: [] })
+  keyConcepts: string[];
+
+  @Prop()
+  language?: string;
+
   @Prop({ type: Date, index: true })
   deletedAt?: Date;
 }

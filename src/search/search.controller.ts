@@ -4,6 +4,7 @@ import { Request } from "express";
 import { Connection } from "mongoose";
 import { SearchService } from "./search.service";
 import { SemanticSearchService } from "./semantic-search.service";
+import { SemanticSearchQueryDto } from "./dto/search-query.dto";
 
 @ApiTags("search")
 @Controller("search")
@@ -25,11 +26,16 @@ export class SearchController {
 
   @Get("semantic")
   @ApiOperation({ summary: "Semantic search" })
-  @ApiQuery({ name: "q", required: true })
-  @ApiQuery({ name: "limit", required: false, type: Number })
-  async semanticSearch(@Req() req: Request, @Query("q") query: string, @Query("limit") limit?: number) {
+  async semanticSearch(@Req() req: Request, @Query() queryDto: SemanticSearchQueryDto) {
     const indexName = this.semanticSearchService.getSearchAlias();
-    return this.semanticSearchService.search(query, limit, { indexName, minScore: 0.5, useHybrid: true });
+    return this.semanticSearchService.search(queryDto.q, queryDto.limit, {
+      indexName,
+      minScore: 25.0,
+      useHybrid: true,
+      enableQueryAnalysis: queryDto.enable_analysis,
+      enableReranking: queryDto.enable_reranking,
+      sortBy: queryDto.sort_by,
+    });
   }
 
   @Get()

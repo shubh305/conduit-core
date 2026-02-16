@@ -254,8 +254,17 @@ export class PostsService {
     };
   }
 
-  async updateSummary(connection: Connection, id: string, summary: string): Promise<PostDocument | null> {
-    return this.postsRepository.update(connection, id, { summary });
+  async updateEnrichments(
+    connection: Connection,
+    id: string,
+    enrichments: {
+      summary?: string;
+      entities?: string[];
+      keyConcepts?: string[];
+      language?: string;
+    },
+  ): Promise<PostDocument | null> {
+    return this.postsRepository.update(connection, id, enrichments);
   }
 
   private async ingestPost(post: PostDocument | null, tenant?: Tenant) {

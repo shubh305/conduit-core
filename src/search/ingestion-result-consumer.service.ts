@@ -8,6 +8,9 @@ interface IngestionResult {
   entity_id: string;
   entity_type: string;
   summary?: string;
+  entities?: string[];
+  key_concepts?: string[];
+  language?: string;
   index_name: string;
   status: string;
 }
@@ -28,6 +31,8 @@ export class IngestionResultConsumerService implements OnModuleInit, OnModuleDes
     const brokers = this.configService.get<string>("KAFKA_BROKERS");
     const user = this.configService.get<string>("KAFKA_SASL_USER");
     const pass = this.configService.get<string>("KAFKA_SASL_PASS");
+    const topic = this.configService.get<string>("KAFKA_INGEST_RESULTS_TOPIC");
+    const consumerGroup = this.configService.get<string>("KAFKA_INGEST_RESULTS_CONSUMER_GROUP");
 
     if (!brokers) {
       this.logger.warn("KAFKA_BROKERS not configured. Ingestion result consumer will not start.");
@@ -47,11 +52,11 @@ export class IngestionResultConsumerService implements OnModuleInit, OnModuleDes
       ssl: false,
     });
 
-    this.consumer = this.kafka.consumer({ groupId: "conduit-ingestion-consumer" });
+    this.consumer = this.kafka.consumer({ groupId: consumerGroup });
 
     try {
       await this.consumer.connect();
-      await this.consumer.subscribe({ topic: "octane.ingest.results", fromBeginning: false });
+      await this.consumer.subscribe({ topic: topic, fromBeginning: false });
 
       await this.consumer.run({
         eachMessage: async ({ message }) => {
@@ -64,7 +69,7 @@ export class IngestionResultConsumerService implements OnModuleInit, OnModuleDes
         },
       });
 
-      this.logger.log("Ingestion result consumer started and subscribed to octane.ingest.results");
+      this.logger.log("Ingestion result consumer started and subscribed to " + topic);
     } catch (error) {
       this.logger.error(`Failed to start Kafka consumer: ${error.message}`);
     }
@@ -79,19 +84,24 @@ export class IngestionResultConsumerService implements OnModuleInit, OnModuleDes
   }
 
   private async handleResult(data: IngestionResult) {
-    const { entity_id, entity_type, summary, index_name, status } = data;
+    const { entity_id, entity_type, summary, entities, key_concepts, language, index_name, status } = data;
 
-    if (status === "completed" && entity_type === "blog_post" && summary) {
+    if (status === "completed" && entity_type === "blog_post") {
       try {
         const tenantPrefix = this.configService.get<string>("SEARCH_TENANT_INDEX_PREFIX") || "conduit_";
-        const tenantId = index_name.replace(tenantPrefix, "");
+        const tenantId = index_name.split(tenantPrefix).pop() || "";
 
-        this.logger.log(`Received Kafka result: updating summary for post ${entity_id} in tenant ${tenantId}`);
+        this.logger.log(`Received Kafka result: updating enrichments for post ${entity_id} in tenant ${tenantId}`);
 
         const dbName = this.databaseService.getTenantDatabaseName(tenantId);
         const connection = await this.databaseService.getTenantConnection(dbName);
 
-        await this.postsService.updateSummary(connection, entity_id, summary);
+        await this.postsService.updateEnrichments(connection, entity_id, {
+          summary,
+          entities,
+          keyConcepts: key_concepts,
+          language,
+        });
       } catch (error) {
         this.logger.error(`Failed to process ingestion result for ${entity_id}: ${error.message}`);
       }

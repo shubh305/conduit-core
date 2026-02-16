@@ -12,6 +12,10 @@ export interface SearchOptions {
   minScore?: number;
   vectorThreshold?: number;
   returnChunks?: boolean;
+  enableQueryAnalysis?: boolean;
+  enableQueryExpansion?: boolean;
+  enableReranking?: boolean;
+  sortBy?: "relevancy" | "recency" | "balanced";
 }
 
 export interface RawSemanticResult {
@@ -20,6 +24,7 @@ export interface RawSemanticResult {
   content?: string;
   matched_chunk?: string;
   score: number;
+  rerank_score?: number;
   metadata?: Record<string, unknown>;
 }
 
@@ -83,7 +88,7 @@ export class SemanticSearchService {
             entity_type: entityType,
           },
         },
-        enrichments: ["summary"],
+        enrichments: ["summary", "vectors"],
       };
 
       this.logger.log(`Ingesting ${entityType} ${entityId} into index ${requestPayload.index_name}`);
@@ -118,9 +123,14 @@ export class SemanticSearchService {
             },
             index_name: options.indexName || this.searchAlias,
             use_hybrid: options.useHybrid !== undefined ? options.useHybrid : true,
-            min_score: options.minScore || 0.5,
-            vector_threshold: options.vectorThreshold || 0.7,
+            min_score: options.minScore || 25.0,
+            vector_threshold: options.vectorThreshold || 0.65,
             return_chunks: options.returnChunks !== undefined ? options.returnChunks : true,
+            enable_query_analysis: true,
+            enable_query_expansion: true,
+            enable_reranking: false,
+            sort_by: options.sortBy || "relevancy",
+            debug: true,
           },
           {
             headers: {
@@ -150,6 +160,7 @@ export class SemanticSearchService {
           status: meta.status as string,
           isSemantic: true,
           score: item.score,
+          rerankScore: item.rerank_score,
           likesCount: 0,
           commentsCount: 0,
           viewsCount: 0,
