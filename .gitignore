@@ -143,7 +143,6 @@ vite.config.ts.timestamp-*
 
 # Misc
 prd*
-/docs/
 /scripts/
 /.DS_Store
 *-workspace

@@ -60,8 +60,8 @@ async function bootstrap() {
   app.useGlobalFilters(new GlobalExceptionFilter());
 
   const config = new DocumentBuilder()
-    .setTitle("Project Conduit API")
-    .setDescription("Backend API for Project Conduit multi-tenant publishing platform")
+    .setTitle("Conduit API")
+    .setDescription("Backend API for Conduit multi-tenant publishing platform")
     .setVersion("0.0.1")
     .addBearerAuth()
     .addApiKey(
