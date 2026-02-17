@@ -72,7 +72,7 @@ export class MediaController {
     const filename = `${tenantId}/${Date.now()}-${file.originalname}`;
 
     try {
-      const url = await this.storageService.uploadImage(filename, file.buffer, bucket, file.mimetype);
+      const url = await this.storageService.upload(filename, file.buffer, bucket, file.mimetype);
       return {
         url,
         filename: file.originalname,

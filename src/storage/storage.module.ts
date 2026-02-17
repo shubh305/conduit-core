@@ -19,6 +19,11 @@ import { join } from "path";
             package: "storage",
             protoPath: join(__dirname, "storage.proto"),
             url: configService.get<string>("STORAGE_SERVICE_URL"),
+            loader: {
+              keepCase: true,
+            },
+            maxSendMessageLength: 1024 * 1024 * 1024,
+            maxReceiveMessageLength: 1024 * 1024 * 1024,
           },
         }),
         inject: [ConfigService],

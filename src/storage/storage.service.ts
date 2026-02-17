@@ -1,10 +1,10 @@
 import { Injectable, Inject, OnModuleInit, Logger } from "@nestjs/common";
-import { ClientGrpc } from "@nestjs/microservices";
+import * as microservices from "@nestjs/microservices";
 import { ConfigService } from "@nestjs/config";
 import { lastValueFrom, Observable } from "rxjs";
 
 interface StorageGrpcService {
-  uploadImage(data: {
+  upload(data: {
     filename: string;
     data: Uint8Array | Buffer;
     bucket: string;
@@ -21,7 +21,7 @@ export class StorageService implements OnModuleInit {
   private readonly publicUrl: string;
 
   constructor(
-    @Inject("STORAGE_PACKAGE") private client: ClientGrpc,
+    @Inject("STORAGE_PACKAGE") private client: microservices.ClientGrpc,
     private configService: ConfigService,
   ) {
     this.publicUrl = this.configService.get<string>("STORAGE_PUBLIC_URL");
@@ -31,7 +31,7 @@ export class StorageService implements OnModuleInit {
     this.storageGrpcService = this.client.getService<StorageGrpcService>("StorageService");
   }
 
-  async uploadImage(
+  async upload(
     filename: string,
     buffer: Buffer,
     bucket: string = "images",
@@ -40,7 +40,7 @@ export class StorageService implements OnModuleInit {
     try {
       this.logger.log(`Uploading ${filename} to bucket ${bucket}...`);
       const response = await lastValueFrom(
-        this.storageGrpcService.uploadImage({
+        this.storageGrpcService.upload({
           filename,
           data: buffer,
           bucket,
