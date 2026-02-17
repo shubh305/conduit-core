@@ -7,6 +7,7 @@ import { PostDocument, TiptapNode, TiptapContent } from "./schemas/post.schema";
 import { FeedService } from "../../feed/feed.service";
 import { Tenant } from "../../tenants/schemas/tenant.schema";
 import { SemanticSearchService } from "../../search/semantic-search.service";
+import { RESERVED_POST_SLUGS } from "../../common/constants";
 
 @Injectable()
 export class PostsService {
@@ -195,10 +196,16 @@ export class PostsService {
   private async generateUniqueSlug(connection: Connection, baseText: string): Promise<string> {
     const baseSlug = slugify(baseText, { lower: true, strict: true });
     let slug = baseSlug;
+
+    // Check if initial slug is reserved
+    if (RESERVED_POST_SLUGS.includes(slug.toLowerCase())) {
+      slug = `${baseSlug}-1`;
+    }
+
     let counter = 1;
 
     while (await this.postsRepository.findOne(connection, { slug })) {
-      slug = `${baseSlug}-${counter}`;
+      slug = `${baseSlug}-${counter + 1}`;
       counter++;
     }
     return slug;

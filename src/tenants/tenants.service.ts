@@ -8,6 +8,7 @@ import { CreateTenantDto } from "./dto/create-tenant.dto";
 import { FeedRepository } from "../feed/feed.repository";
 import { UsersService } from "../users/users.service";
 import { SemanticSearchService } from "../search/semantic-search.service";
+import { RESERVED_TENANT_SLUGS } from "../common/constants";
 
 @Injectable()
 export class TenantsService {
@@ -27,6 +28,10 @@ export class TenantsService {
     const existing = await this.tenantsRepository.findBySlug(createTenantDto.slug);
     if (existing) {
       throw new BadRequestException("Tenant slug already taken");
+    }
+
+    if (RESERVED_TENANT_SLUGS.includes(createTenantDto.slug.toLowerCase())) {
+      throw new BadRequestException(`Slug "${createTenantDto.slug}" is a reserved system keyword`);
     }
 
     let finalOwnerUsername = ownerUsername;
