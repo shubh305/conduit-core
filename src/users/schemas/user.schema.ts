@@ -70,6 +70,10 @@ export class User {
   @Prop()
   lastLoginAt?: Date;
 
+  @ApiProperty({ example: false })
+  @Prop({ default: false })
+  onboardingCompleted: boolean;
+
   @Prop()
   deletedAt?: Date;
 }

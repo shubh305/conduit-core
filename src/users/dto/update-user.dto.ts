@@ -41,4 +41,7 @@ export class UpdateUserDto {
     stackoverflow?: string;
     instagram?: string;
   };
+  @ApiPropertyOptional()
+  @IsOptional()
+  onboardingCompleted?: boolean;
 }
