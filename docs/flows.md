@@ -69,7 +69,7 @@ Background automation handled by the `SchedulerModule`.
 graph LR
     Cron[Every 10 Mins] --> Check[Query Tenant DBs]
     Check --> Filter[Filter: Scheduled & Time Due]
-    Filter --> Update[Update status: "published"]
+    Filter --> Update[Update status: published]
     Update --> Feed[Upsert to Global Feed]
     Feed --> Done((Post Live))
 ```

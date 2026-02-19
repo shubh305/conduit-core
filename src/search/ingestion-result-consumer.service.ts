@@ -40,7 +40,7 @@ export class IngestionResultConsumerService implements OnModuleInit, OnModuleDes
     }
 
     this.kafka = new Kafka({
-      clientId: "conduit-core",
+      clientId: this.configService.get<string>("KAFKA_CLIENT_ID", "conduit-core"),
       brokers: brokers.split(","),
       sasl: user
         ? {
