@@ -14,6 +14,7 @@ import { SearchModule } from "./search/search.module";
 import { SchedulerModule } from "./scheduler/scheduler.module";
 import { DictionaryModule } from "./dictionary/dictionary.module";
 import { SemanticSearchModule } from "./search/semantic-search.module";
+import { CatalystModule } from "./catalyst/catalyst.module";
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { SemanticSearchModule } from "./search/semantic-search.module";
         STORAGE_PUBLIC_URL: Joi.string().default("https://storage.octanebrew.dev"),
         DICTIONARY_SERVICE_URL: Joi.string().required(),
         SHARED_API_KEY: Joi.string().required(),
+        CATALYST_URL: Joi.string().required(),
         KAFKA_BROKERS: Joi.string().optional(),
         KAFKA_SASL_USER: Joi.string().optional(),
         KAFKA_SASL_PASS: Joi.string().optional(),
@@ -62,6 +64,7 @@ import { SemanticSearchModule } from "./search/semantic-search.module";
     SearchModule,
     SchedulerModule,
     DictionaryModule,
+    CatalystModule,
   ],
   controllers: [],
   providers: [],
