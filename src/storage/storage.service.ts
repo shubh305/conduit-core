@@ -48,7 +48,8 @@ export class StorageService implements OnModuleInit {
         }),
       );
 
-      const finalUrl = this.publicUrl ? `${this.publicUrl}/${response.url}` : response.url;
+      const finalUrl =
+        this.publicUrl && !response.url.startsWith("http") ? `${this.publicUrl}/${response.url}` : response.url;
 
       this.logger.log(`Upload successful: ${finalUrl} (Original: ${response.url})`);
       return finalUrl;
