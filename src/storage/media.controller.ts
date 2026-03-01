@@ -84,4 +84,42 @@ export class MediaController {
       throw new BadRequestException("Image upload failed");
     }
   }
+
+  @Post("upload-url")
+  @ApiOperation({ summary: "Upload an image from a URL" })
+  async uploadFileFromUrl(@Body("url") externalUrl: string, @Req() req: Request) {
+    if (!externalUrl) {
+      throw new BadRequestException("URL is required");
+    }
+
+    try {
+      const response = await fetch(externalUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.statusText}`);
+      }
+
+      const buffer = Buffer.from(await response.arrayBuffer());
+      const contentType = response.headers.get("content-type") || "image/jpeg";
+
+      if (!contentType.startsWith("image/")) {
+        throw new BadRequestException("URL must point to an image");
+      }
+
+      const extension = contentType.split("/")[1] || "jpg";
+      const tenant = req["tenant"];
+      const tenantId = tenant?.slug || "common";
+      const bucket = `conduit-uploads`;
+      const filename = `${tenantId}/${Date.now()}-remote.${extension}`;
+
+      const url = await this.storageService.upload(filename, buffer, bucket, contentType);
+
+      return {
+        url,
+        mimeType: contentType,
+      };
+    } catch (error) {
+      this.logger.error(`Upload from URL failed: ${error.message}`);
+      throw new BadRequestException("Failed to upload image from URL");
+    }
+  }
 }
