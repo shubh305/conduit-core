@@ -62,6 +62,9 @@ export class FeedItem {
   @Prop({ default: 0 })
   commentsCount: number;
 
+  @Prop({ default: 0 })
+  readingTimeMinutes: number;
+
   @Prop({ default: 0, index: true })
   hotScore: number;
 }

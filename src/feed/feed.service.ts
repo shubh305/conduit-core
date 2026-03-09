@@ -39,6 +39,7 @@ export class FeedService {
       authorUsername: authorUsername || p.authorUsername,
       authorAvatar: p.authorAvatar,
       publishedAt: p.publishedAt || new Date(),
+      readingTimeMinutes: p.readingTimeMinutes || 0,
       tags: p.tags,
     };
 
